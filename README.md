@@ -27,3 +27,16 @@ Das Dashboard ordnet einen Eintrag vollständig seinem Startdatum zu, auch wenn 
 
 ## Lokal öffnen
 `index.html` öffnen oder im Ordner `python3 -m http.server 8080` ausführen. Für eine stabile Speicherung dieselbe URL verwenden.
+
+
+## Erweiterungen
+- Tagesübersicht mit chronologischen Zeitblöcken, Tageswechsel und Wochenfortschritt
+- Persönliches Wochenziel (Standard 40 Stunden), wahlweise inklusive Reisezeit; in JSON-Sicherungen enthalten
+- Jahresauswertung mit zwölf Monatszeilen und Vergleich nach Projekt und Arbeitsort
+- Zusätzliche Dashboard-Filter nach Zeitart, Arbeitsort und Volltext (Projekt/Ort/Notiz); alle Dashboard-Exporte berücksichtigen diese Filter
+- CSV-Export mit Semikolon und Dezimalkomma; Schutz vor Formelinterpretation von Textwerten
+
+Das Wochenziel ist ein persönlicher Vergleichswert. Urlaub und Feiertage werden nicht automatisch berücksichtigt. Alle Auswertungen ordnen die gesamte Nettozeit dem Startdatum des Eintrags zu. PDF-Ausgabe bezieht sich auf das Dashboard.
+
+## Urlaubstracker
+Eigene Seite mit Jahresanspruch, manuellem Übertrag, verbrauchten und geplanten Tagen sowie frei verfügbarem Rest. Ganze Tage und einzelne halbe Tage; Wochenenden werden ausgeschlossen. Feiertage oder andere freie Tage sind pro Jahr manuell als Datumswerte zu hinterlegen. Vergangene Einträge einschließlich heute gelten als verbraucht, künftige Tage als reserviert. Es gibt keine Genehmigungsverwaltung. Jahresübergreifende Zeiträume werden für jedes Jahr separat gezählt. Urlaub, Ansprüche und freie Tage sind in den JSON-Sicherungen enthalten. Der Tracker verändert das persönliche Wochenziel nicht automatisch.
