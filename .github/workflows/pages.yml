@@ -18,21 +18,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install test dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Validate application
+        run: npm test
+      - name: Prepare static app
         run: |
-          node --check app.js
-          node --check sync.js
-          node --check sync-core.js
-          node tests/sync.cjs
-          node tests/calculations.cjs
+          mkdir -p dist
+          cp index.html app.js style.css sync.js sync-core.js sync-config.js supabase-sdk.js SUPABASE-LICENSE THIRD-PARTY.md dist/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: dist
           name: github-pages-${{ github.run_attempt }}
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
         with:
           artifact_name: github-pages-${{ github.run_attempt }}
-

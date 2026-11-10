@@ -1,6 +1,6 @@
 # Zeitwerk – persönliche Projekt- und Arbeitszeiterfassung
 
-Responsive Web-App ohne Build-Schritt und ohne Server. Unterstützt Desktop, iPhone und iPad im Browser.
+Responsive Web-App ohne Build-Schritt mit optionaler privater Supabase-Synchronisierung. Unterstützt Desktop, iPhone und iPad im Browser.
 
 ## Funktionen
 - Arbeitszeit und Reisezeit, Start/Ende mit Datum, Pausen und Nettozeit
@@ -21,7 +21,7 @@ Responsive Web-App ohne Build-Schritt und ohne Server. Unterstützt Desktop, iPh
 Alternativ: Settings → Pages → Deploy from a branch → main → / (root). Dann ist der Workflow nicht erforderlich.
 
 ## Daten und Grenzen
-Die Zeitdaten liegen ausschließlich im localStorage dieses Browsers, pro Domain und Browserprofil. Regelmäßig JSON-Backups erstellen. Browserdaten löschen, privater Modus und Gerätewechsel können die Daten entfernen. Es gibt keine automatische Synchronisierung und keine Anmeldung. GitHub Pages veröffentlicht den App-Code; persönliche Einträge werden nicht ins Repository geschrieben.
+Die App speichert Zeitdaten sofort lokal im Browser. Nach Anmeldung werden sie automatisch mit dem privaten Supabase-Konto abgeglichen. Ohne Internet bleiben Änderungen lokal vorgemerkt. Regelmäßig JSON-Sicherungen erstellen; beim Löschen von Browserdaten können noch nicht synchronisierte Änderungen verloren gehen. GitHub Pages veröffentlicht ausschließlich den App-Code. Persönliche Einträge werden nicht ins Repository geschrieben.
 
 Das Dashboard ordnet einen Eintrag vollständig seinem Startdatum zu, auch wenn er über Mitternacht reicht. Reisezeit wird separat gezählt; die Gesamtsumme ist Arbeitszeit plus Reisezeit. Keine automatische rechtliche oder vergütungsbezogene Bewertung. Start-/Endzeit werden in der lokalen Zeitzone des Geräts interpretiert.
 
@@ -45,13 +45,19 @@ Eigene Seite mit Jahresanspruch, manuellem Übertrag, verbrauchten und geplanten
 ## Urlaubseinstellungen und Monatskalender
 Jahresanspruch, manuelle Übertragshöhe, optionales Verfallsdatum (im jeweiligen Jahr) und zusätzliche freie Tage werden unter Einstellungen je Kalenderjahr gepflegt. Ohne Verfallsdatum bleibt der Übertrag im Konto erhalten. Urlaub wird chronologisch zuerst auf noch gültigen Übertrag angerechnet; nach Ablauf wird der ungenutzte Anteil als verfallen ausgewiesen und vom frei verfügbaren Rest abgezogen. Dies bildet die selbst konfigurierte Regel ab, keine automatische arbeitsrechtliche Prüfung.
 
-Die Urlaubsseite zeigt eine Monatsansicht: Urlaub grün, NRW-Feiertage gelb und Projekt-/Ortsangaben blau. Ein Klick auf ein Datum öffnet alle Details und die Bearbeitung vorhandener Zeiteinträge. Wochenend- und Feiertage innerhalb eines Urlaubszeitraums sind als ohne Abzug gekennzeichnet. Über Mitternacht laufende Projekte erscheinen an den betroffenen Tagen, ein Ende genau um 00:00 nicht zusätzlich am Folgetag. Alle Einstellungen sind Teil der JSON-Sicherung.
+Die Urlaubsseite zeigt eine Monatsansicht: Urlaub in Salbeigrün, NRW-Feiertage in Messing und Projekt-/Ortsangaben in Grün-Grau. Ein Klick auf ein Datum öffnet alle Details und die Bearbeitung vorhandener Zeiteinträge. Wochenend- und Feiertage innerhalb eines Urlaubszeitraums sind als ohne Abzug gekennzeichnet. Über Mitternacht laufende Projekte erscheinen an den betroffenen Tagen, ein Ende genau um 00:00 nicht zusätzlich am Folgetag. Alle Einstellungen sind Teil der JSON-Sicherung.
 
 
 
-## Geräteübergreifende Synchronisierung (vorbereitet)
-Die Seite Konto & Sync enthält Anmeldung per E-Mail-Link, Datenübernahme und Konfliktauswahl. Die Cloud ist erst aktiv, wenn das persönliche Supabase-Projekt tatsächlich eingerichtet und in `sync-config.js` konfiguriert wurde. Ohne Konfiguration arbeitet die App ausschließlich lokal weiter.
+## Geräteübergreifende Synchronisierung
+Die Seite Konto & Sync enthält Anmeldung per E-Mail-Link, Datenübernahme und Konfliktauswahl. Das persönliche Supabase-Projekt ist eingerichtet und über den öffentlichen Schlüssel in `sync-config.js` verbunden. Ohne Konfiguration arbeitet die App ausschließlich lokal weiter.
 
 Siehe [backend/SETUP.md](backend/SETUP.md) und [backend/setup.sql](backend/setup.sql) für die konkrete Einrichtung und die erforderlichen Live-Prüfungen. Daten, Stempelstatus und Urlaubs-/Projekteinstellungen werden als private, versionsgeprüfte Dokumente je Benutzer gespeichert. Gleichzeitige Änderungen erfordern eine bewusste Auswahl; sie werden nicht automatisch zusammengeführt. Offline-Änderungen bleiben lokal vorgemerkt.
 
 Das Browser-SDK wird lokal ausgeliefert (Version 2.119.0, MIT, `SUPABASE-LICENSE`). `node tests/sync.cjs` prüft den clientseitigen Konflikt-/Wiederholungsablauf mit simuliertem Backend; dies ersetzt keinen Live-Test der Datenbank, RLS-Regeln und E-Mail-Anmeldung.
+
+## Entwicklung und Qualitätssicherung
+
+`npm ci --ignore-scripts` installiert ausschließlich Entwicklungsabhängigkeiten. `npm test` prüft Berechnungen, Sync-Rennen und die vollständigen Anwendungsabläufe in einem isolierten DOM. Die produktive App benötigt keine npm-Pakete im Browser. Der GitHub-Workflow prüft die App und veröffentlicht nur die benötigten statischen Dateien. Details und Prüfgrenzen: [QA.md](QA.md).
+
+Die Oberfläche verwendet ein eigenständiges Zeitwerk-Zeichen, Dunkelgrün, warme helle Flächen und Messingakzente. Der Cloud-Status ist dauerhaft im Kopf erreichbar. Bereits ausgestempelte Vorgänge werden zum Ergänzen der Randdaten automatisch wiederhergestellt. Während eines Cloud-Abgleichs und offener Konflikte bleibt lokales Erfassen möglich. Bei abweichenden Datenständen wird die Cloud erst nach bewusster Auswahl weitergeschrieben.

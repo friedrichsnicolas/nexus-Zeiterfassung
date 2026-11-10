@@ -1,0 +1,11 @@
+{
+  "name": "zeitwerk-personal",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "node --check app.js && node --check sync.js && node --check sync-core.js && node tests/calculations.cjs && node tests/sync.cjs && node tests/ui.cjs"
+  },
+  "devDependencies": {
+    "jsdom": "26.1.0"
+  }
+}

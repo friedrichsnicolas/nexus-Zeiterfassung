@@ -1,21 +1,22 @@
 'use strict';
 const $=s=>document.querySelector(s), KEY='zeitwerk-v1';
 let state={projects:['neXus intern'],places:[],entries:[]};
-function validate(s){if(!s||!Array.isArray(s.projects)||!Array.isArray(s.places)||!Array.isArray(s.entries)||!s.projects.every(x=>typeof x==='string'&&x.length>0&&x.length<=120)||!s.places.every(x=>typeof x==='string'&&x.length>0&&x.length<=120))throw Error('Ungültige Stammdaten');if(s.preferences && (!Number.isFinite(s.preferences.weeklyHours)||s.preferences.weeklyHours<1||s.preferences.weeklyHours>100||!['work','all'].includes(s.preferences.basis)))throw Error('Ungültiges Wochenziel');if(s.vacation)validateVacation(s.vacation);const ids=new Set();for(const e of s.entries){if(typeof e.id!=='string'||ids.has(e.id)||typeof e.project!=='string'||!['Arbeitszeit','Reisezeit'].includes(e.kind)||!['Remote','Vor Ort'].includes(e.mode)||!/^\d{4}-\d\d-\d\dT\d\d:\d\d$/.test(e.start)||!/^\d{4}-\d\d-\d\dT\d\d:\d\d$/.test(e.end)||!Number.isFinite(+new Date(e.start))||!Number.isFinite(+new Date(e.end))||!Number.isInteger(e.pause)||e.pause<0||minutes(e)<=0||typeof e.place!=='string'||typeof e.note!=='string')throw Error('Ungültiger Zeiteintrag');ids.add(e.id)}return s}
+function validate(s){if(!s||!Array.isArray(s.projects)||!Array.isArray(s.places)||!Array.isArray(s.entries)||!s.projects.every(x=>typeof x==='string'&&x.length>0&&x.length<=120)||!s.places.every(x=>typeof x==='string'&&x.length>0&&x.length<=120))throw Error('Ungültige Stammdaten');if(s.preferences && (!Number.isFinite(s.preferences.weeklyHours)||s.preferences.weeklyHours<1||s.preferences.weeklyHours>100||!['work','all'].includes(s.preferences.basis)))throw Error('Ungültiges Wochenziel');if(s.vacation)validateVacation(s.vacation);const ids=new Set();for(const e of s.entries){if(typeof e.id!=='string'||ids.has(e.id)||typeof e.project!=='string'||!['Arbeitszeit','Reisezeit'].includes(e.kind)||!['Remote','Vor Ort'].includes(e.mode)||!/^\d{4}-\d\d-\d\dT\d\d:\d\d$/.test(e.start)||!/^\d{4}-\d\d-\d\dT\d\d:\d\d$/.test(e.end)||!validDate(e.start.slice(0,10))||!validDate(e.end.slice(0,10))||!Number.isFinite(+new Date(e.start))||!Number.isFinite(+new Date(e.end))||!Number.isInteger(e.pause)||e.pause<0||minutes(e)<=0||typeof e.place!=='string'||typeof e.note!=='string')throw Error('Ungültiger Zeiteintrag');ids.add(e.id)}return s}
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const minutes=e=>(new Date(e.end)-new Date(e.start))/60000-Number(e.pause);
 const hours=m=>new Intl.NumberFormat('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2}).format(m/60)+' h';
 const local=d=>new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16);
 try{const raw=localStorage.getItem(KEY);if(raw)state=validate(JSON.parse(raw))}catch{alert('Gespeicherte Daten konnten nicht geladen werden. Bitte Sicherung importieren.');}
-function save(next){if(window.zeitwerkSync&&!window.zeitwerkSync.beforeSave())return false;try{localStorage.setItem(KEY,JSON.stringify(next));state=next;window.zeitwerkSync?.changed();return true}catch{tell('Speichern fehlgeschlagen. Speicherplatz oder Browserberechtigung prüfen.');return false}}
+function save(next,nextClock=clock,preserveDraft=false){if(window.zeitwerkSync&&!window.zeitwerkSync.beforeSave())return false;const oldState=localStorage.getItem(KEY),oldClock=localStorage.getItem(CLOCK_KEY);try{validate(next);localStorage.setItem(KEY,JSON.stringify(next));if(nextClock)localStorage.setItem(CLOCK_KEY,JSON.stringify(nextClock));else localStorage.removeItem(CLOCK_KEY);state=next;clock=nextClock;clockView();window.zeitwerkSync?.changed(preserveDraft);return true}catch{try{if(oldState===null)localStorage.removeItem(KEY);else localStorage.setItem(KEY,oldState);if(oldClock===null)localStorage.removeItem(CLOCK_KEY);else localStorage.setItem(CLOCK_KEY,oldClock)}catch{}tell('Speichern fehlgeschlagen. Bitte Eingaben und Gerätespeicher prüfen.');return false}}
 function tell(t){$('#status').textContent=t;setTimeout(()=>{$('#status').textContent=''},6000)}
 function page(p){for(const x of ['entry','dashboard','daily','reports','vacation','account','settings'])$('#'+x).hidden=x!==p;$('#nav').hidden=true;$('#menu').setAttribute('aria-expanded','false');if(p==='dashboard')render();if(p==='daily')renderDay();if(p==='reports')renderReports();if(p==='vacation')renderVacation();if(p==='settings'){renderVacationSettings();$('#weeklyGoal').value=preferences().weeklyHours;$('#goalBasis').value=preferences().basis;}document.querySelectorAll('[data-page]').forEach(b=>b.setAttribute('aria-current',b.dataset.page===p?'page':'false'));document.title='Zeitwerk · '+({entry:'Erfassung',dashboard:'Dashboard',daily:'Tagesübersicht',reports:'Auswertungen',vacation:'Urlaub',account:'Konto & Sync',settings:'Einstellungen'}[p]||'Zeiterfassung');}
+document.querySelector('.brand').onclick=e=>{e.preventDefault();page('entry');window.scrollTo({top:0,behavior:'smooth'})};
 $('#menu').onclick=()=>{const n=$('#nav');n.hidden=!n.hidden;$('#menu').setAttribute('aria-expanded',String(!n.hidden))};document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>page(b.dataset.page));document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('#nav').hidden=true;$('#menu').setAttribute('aria-expanded','false')}});
 const form=$('#form'),field=n=>form.elements.namedItem(n);
 function options(){const prev=field('project').value,fp=$('#filterProject').value;field('project').innerHTML=state.projects.map(p=>`<option>${esc(p)}</option>`).join('');if(state.projects.includes(prev))field('project').value=prev;$('#filterProject').innerHTML='<option value="">Alle Projekte</option>'+[...new Set([...state.projects,...state.entries.map(e=>e.project)])].map(p=>`<option>${esc(p)}</option>`).join('');$('#filterProject').value=fp;$('#places').innerHTML=state.places.map(p=>`<option value="${esc(p)}">`).join('');for(const [key,id]of [['projects','projectList'],['places','placeList']]){$('#'+id).innerHTML=state[key].map((p,i)=>`<div class="item"><span>${esc(p)}</span><button data-key="${key}" data-index="${i}">Entfernen</button></div>`).join('')||'<p class="hint">Noch keine Einträge.</p>';$('#'+id).querySelectorAll('button').forEach(b=>b.onclick=()=>{const next=structuredClone(state);next[b.dataset.key].splice(+b.dataset.index,1);if(save(next)){options();tell('Entfernt. Vorhandene Zeiteinträge bleiben erhalten.')}})}}
 function reset(){HTMLFormElement.prototype.reset.call(form);field('id').value='';const d=new Date();d.setSeconds(0,0);field('start').value=local(d);d.setHours(d.getHours()+1);field('end').value=local(d);preview()}
 function preview(){$('#placeLabel').hidden=field('mode').value!=='Vor Ort';const m=minutes({start:field('start').value,end:field('end').value,pause:field('pause').value});$('#duration').textContent=Number.isFinite(m)&&m>0?'Netto: '+hours(m):'Bitte Zeitraum prüfen'}form.oninput=preview;
-form.onsubmit=e=>{e.preventDefault();if(!field('project').value)return tell('Bitte zuerst ein Projekt in den Einstellungen anlegen.');const entry=Object.fromEntries(new FormData(form));entry.pause=Number(entry.pause);entry.id=entry.id||crypto.randomUUID();entry.place=entry.mode==='Vor Ort'?entry.place.trim():'';if(!Number.isFinite(minutes(entry))||minutes(entry)<=0)return tell('Ende muss nach Start liegen und die Pause kürzer als der Zeitraum sein.');if(state.entries.some(x=>x.id!==entry.id&&new Date(entry.start)<new Date(x.end)&&new Date(entry.end)>new Date(x.start)))return tell('Dieser Zeitraum überschneidet sich mit einem bestehenden Eintrag.');const next=structuredClone(state),i=next.entries.findIndex(x=>x.id===entry.id);if(i<0)next.entries.push(entry);else next.entries[i]=entry;if(save(next)){if(clock && entry.id===clock.id){try{localStorage.removeItem(CLOCK_KEY);clock=null;clockView();window.zeitwerkSync?.changed()}catch{tell('Stempelstatus konnte nicht zurückgesetzt werden.')}}reset();render();tell('Eintrag gespeichert.')}};$('#reset').onclick=reset;
+form.onsubmit=e=>{e.preventDefault();if(!field('project').value)return tell('Bitte zuerst ein Projekt in den Einstellungen anlegen.');const entry=Object.fromEntries(new FormData(form));entry.pause=Number(entry.pause);entry.id=entry.id||crypto.randomUUID();entry.place=entry.mode==='Vor Ort'?entry.place.trim():'';if(!Number.isFinite(minutes(entry))||minutes(entry)<=0)return tell('Ende muss nach Start liegen und die Pause kürzer als der Zeitraum sein.');if(state.entries.some(x=>x.id!==entry.id&&new Date(entry.start)<new Date(x.end)&&new Date(entry.end)>new Date(x.start)))return tell('Dieser Zeitraum überschneidet sich mit einem bestehenden Eintrag.');const next=structuredClone(state),i=next.entries.findIndex(x=>x.id===entry.id);if(i<0)next.entries.push(entry);else next.entries[i]=entry;if(save(next,clock&&entry.id===clock.id?null:clock)){reset();render();tell('Eintrag gespeichert.')}};$('#reset').onclick=reset;
 for(const [id,key]of [['projectForm','projects'],['placeForm','places']])$('#'+id).onsubmit=e=>{e.preventDefault();const v=e.target.elements.namedItem('value').value.trim();if(!v)return;if(state[key].some(x=>x.toLowerCase()===v.toLowerCase()))return tell('Bereits vorhanden.');const next=structuredClone(state);next[key].push(v);if(save(next)){e.target.reset();options();tell('Hinzugefügt.')}};
 function period(){const d=new Date(),p=$('#period').value;let a='',b='';if(p==='month'){a=local(new Date(d.getFullYear(),d.getMonth(),1)).slice(0,10);b=local(new Date(d.getFullYear(),d.getMonth()+1,0)).slice(0,10)}if(p==='week'){const w=new Date(d);w.setDate(w.getDate()-(w.getDay()+6)%7);a=local(w).slice(0,10);w.setDate(w.getDate()+6);b=local(w).slice(0,10)}if(p!=='custom'){$('#from').value=a;$('#to').value=b}render()}
 function selected(){const a=$('#from').value,b=$('#to').value,p=$('#filterProject').value;return state.entries.filter(e=>(!a||e.start.slice(0,10)>=a)&&(!b||e.start.slice(0,10)<=b)&&(!p||e.project===p)&&(!$('#filterKind').value||e.kind===$('#filterKind').value)&&(!$('#filterMode').value||e.mode===$('#filterMode').value)&&(!$('#filterSearch').value.trim()||[e.project,e.place,e.note].join(' ').toLocaleLowerCase('de').includes($('#filterSearch').value.trim().toLocaleLowerCase('de')))).sort((x,y)=>y.start.localeCompare(x.start))}
@@ -24,7 +25,7 @@ function render(){$('#reportContext').textContent=[$('#from').value||'Beginn', $
 $('#period').onchange=period;for(const id of ['from','to'])$('#'+id).onchange=()=>{$('#period').value='custom';if($('#from').value&&$('#to').value&&$('#from').value>$('#to').value)tell('Beginn des Filters liegt nach dem Ende.');render()};$('#filterProject').onchange=render;
 function download(text,name,type){const url=URL.createObjectURL(new Blob([text],{type})),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 $('#backup').onclick=()=>download(JSON.stringify({state,clock},null,2),'zeitwerk-sicherung-'+local(new Date()).slice(0,10)+'.json','application/json');
-$('#restore').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const raw=JSON.parse(await f.text()),next=validate(raw.state||raw),hasClock=Object.prototype.hasOwnProperty.call(raw,'clock');if(hasClock&&!window.ZeitwerkSyncCore.validClock(raw.clock))throw Error('Ungültiger Stempelstatus');if(confirm(`${next.entries.length} Einträge importieren und aktuelle Daten ersetzen?`)&&save(next)){if(hasClock){clock=raw.clock;if(clock)localStorage.setItem(CLOCK_KEY,JSON.stringify(clock));else localStorage.removeItem(CLOCK_KEY);clockView();window.zeitwerkSync?.changed()}options();reset();render();tell('Sicherung wiederhergestellt.')}}catch{tell('Import fehlgeschlagen: keine gültige Zeitwerk-Sicherung.')}e.target.value=''};
+$('#restore').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const raw=JSON.parse(await f.text()),next=validate(raw.state||raw),hasClock=Object.prototype.hasOwnProperty.call(raw,'clock');if(hasClock&&!window.ZeitwerkSyncCore.validClock(raw.clock))throw Error('Ungültiger Stempelstatus');if(confirm(`${next.entries.length} Einträge importieren und aktuelle Daten ersetzen?`)&&save(next,hasClock?raw.clock:clock)){options();reset();render();tell('Sicherung wiederhergestellt.')}}catch{tell('Import fehlgeschlagen: keine gültige Zeitwerk-Sicherung.')}e.target.value=''};
 $('#pdf').onclick=()=>window.print();
 $('#excel').onclick=()=>{const xml=s=>esc(s),headers=['Projekt','Zeitart','Start','Ende','Pause (Minuten)','Netto (Stunden)','Arbeitsort','Ort','Notiz'];const rows=[headers,...selected().map(e=>[e.project,e.kind,e.start.replace('T',' '),e.end.replace('T',' '),e.pause,minutes(e)/60,e.mode,e.place,e.note])];const content='<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Worksheet ss:Name="Zeiterfassung"><Table>'+rows.map(r=>'<Row>'+r.map(v=>'<Cell><Data ss:Type="'+(typeof v==='number'?'Number':'String')+'">'+xml(v)+'</Data></Cell>').join('')+'</Row>').join('')+'</Table></Worksheet></Workbook>';download(content,'zeitwerk-export.xml','application/xml');tell('Excel-Datei exportiert. Die XML-Datei lässt sich in Excel öffnen.');};
 options();reset();period();
@@ -33,25 +34,27 @@ const CLOCK_KEY=KEY+'-clock';
 let clock=null;
 try{clock=JSON.parse(localStorage.getItem(CLOCK_KEY)||'null')}catch{}
 const clockCard=document.createElement('div');
-clockCard.className='card';
-clockCard.innerHTML='<h2>Stempeluhr</h2><p id="clockInfo"></p><div class="actions"><button type="button" class="primary" id="clockIn">Einstempeln</button><button type="button" id="clockOut">Ausstempeln</button><button type="button" id="clockFinish" hidden>Angaben ergänzen</button></div>';
+clockCard.className='card clockcard';
+clockCard.innerHTML='<div class="clockhead"><span class="live-dot"></span><span class="eyebrow">DEINE ZEIT LÄUFT HIER</span></div><h2>Stempeluhr</h2><p id="clockInfo"></p><div class="actions"><button type="button" class="primary" id="clockIn">Einstempeln</button><button type="button" id="clockOut">Ausstempeln</button><button type="button" id="clockFinish" hidden>Angaben ergänzen</button></div>';
 form.before(clockCard);
 function clockView(){
+ clockCard.classList.toggle('running',!!clock&&!clock.end);
  $('#clockIn').disabled=!!clock;
  $('#clockOut').disabled=!clock||!!clock.end;
- $('#clockFinish').hidden=!clock||!clock.end;
- $('#clockInfo').textContent=!clock?'Bereit. Angaben zu Projekt und Arbeitsort ergänzt du beim Ausstempeln.':clock.end?'Ausgestempelt. Bitte Angaben ergänzen und den Eintrag speichern.':'Eingestempelt seit '+stamp(clock.start)+' · '+hours(Math.max(0,(Date.now()-new Date(clock.start))/60000));
+ $('#clockFinish').hidden=!clock||!clock.end;$('#clockFinish').classList.toggle('primary',!!clock?.end);
+ $('#clockInfo').textContent=!clock?'Bereit. Angaben zu Projekt und Arbeitsort ergänzt du beim Ausstempeln.':clock.end?'Zeitraum beendet: '+stamp(clock.start)+' bis '+stamp(clock.end)+'. Projekt und Arbeitsort ergänzen und speichern – danach kannst du erneut einstempeln.':'Eingestempelt seit '+stamp(clock.start)+' · '+hours(Math.max(0,(Date.now()-new Date(clock.start))/60000));
 }
-function clockStore(next){
- if(window.zeitwerkSync&&!window.zeitwerkSync.beforeSave())return false;
- try{localStorage.setItem(CLOCK_KEY,JSON.stringify(next));clock=next;clockView();window.zeitwerkSync?.changed();return true}catch{tell('Stempelzeit konnte nicht gespeichert werden.');return false}
-}
-function finishClock(){
+function clockStore(next){return save(state,next,true);}
+
+function prefillStoppedClock(){
  if(!clock||!clock.end)return;
- page('entry');HTMLFormElement.prototype.reset.call(form);field('id').value=clock.id;
+ HTMLFormElement.prototype.reset.call(form);field('id').value=clock.id;
  field('start').value=clock.start;field('end').value=clock.end;
  field('project').selectedIndex=-1;
- preview();form.scrollIntoView({behavior:'smooth',block:'start'});
+ preview();
+}
+function finishClock(){
+ if(!clock||!clock.end)return;prefillStoppedClock();page('entry');form.scrollIntoView({behavior:'smooth',block:'start'});
  tell('Bitte Projekt, Zeitart, Arbeitsort und Pause ergänzen und speichern.');
 }
 $('#clockIn').onclick=()=>{
@@ -60,7 +63,7 @@ $('#clockIn').onclick=()=>{
 };
 $('#clockOut').onclick=()=>{
  if(!clock||clock.end)return;
- if(clockStore({...clock,end:local(new Date())}))finishClock();
+ if(clockStore({...clock,end:local(new Date())})){finishClock();if(clock.end===clock.start)tell('Ausgestempelt. Die Erfassung erfolgt minutengenau. Bei weniger als einer Minute bitte das Ende vor dem Speichern anpassen.');}
 };
 $('#clockFinish').onclick=finishClock;
 const originalSubmit=form.onsubmit;
@@ -68,7 +71,8 @@ form.onsubmit=e=>{
  if(clock&&field('id').value===clock.id&&!clock.end){e.preventDefault();return tell('Bitte zuerst ausstempeln.')}
  originalSubmit(e);
 };
-clockView();
+clockView();if(clock?.end)prefillStoppedClock();
+$('#reset').onclick=()=>{if(clock?.end)finishClock();else reset()};
 setInterval(clockView,30000);
 window.addEventListener('storage',e=>{if(e.key===CLOCK_KEY){try{clock=JSON.parse(e.newValue||'null');clockView()}catch{}}});
 
@@ -99,7 +103,7 @@ page('entry');
 
 function vacationData(){return state.vacation||{records:[],quotas:{}}}
 function validDate(s){return typeof s==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(s)&&Number.isFinite(+new Date(s+'T12:00:00'))&&local(new Date(s+'T12:00:00')).slice(0,10)===s}
-function validateVacation(v){if(!v||!Array.isArray(v.records)||!v.quotas||typeof v.quotas!=='object'||Array.isArray(v.quotas))throw Error('Ungültige Urlaubsdaten');const ids=new Set();for(const r of v.records){if(!r||typeof r.id!=='string'||ids.has(r.id)||!validDate(r.start)||!validDate(r.end)||r.end<r.start||!['1','0.5'].includes(String(r.factor))||r.factor===0.5&&r.start!==r.end||typeof r.note!=='string'||(new Date(r.end)-new Date(r.start))/86400000>730)throw Error('Ungültiger Urlaubseintrag');ids.add(r.id)}for(const [y,q]of Object.entries(v.quotas)){if(!/^\d{4}$/.test(y)||!q||!Number.isFinite(q.allowance)||q.allowance<0||q.allowance>366||!Number.isFinite(q.carry)||q.carry<0||q.carry>366||!Array.isArray(q.free)||!q.free.every(d=>validDate(d)&&d.startsWith(y+'-'))||q.expiry&&(!validDate(q.expiry)||!q.expiry.startsWith(y+'-')))throw Error('Ungültiger Urlaubsanspruch')}return v}
+function validateVacation(v){if(!v||!Array.isArray(v.records)||!v.quotas||typeof v.quotas!=='object'||Array.isArray(v.quotas))throw Error('Ungültige Urlaubsdaten');const ids=new Set();for(const r of v.records){if(!r||typeof r.id!=='string'||ids.has(r.id)||!validDate(r.start)||!validDate(r.end)||r.end<r.start||!['1','0.5'].includes(String(r.factor))||Number(r.factor)===0.5&&r.start!==r.end||typeof r.note!=='string'||(new Date(r.end)-new Date(r.start))/86400000>730)throw Error('Ungültiger Urlaubseintrag');ids.add(r.id)}for(const [y,q]of Object.entries(v.quotas)){if(!/^\d{4}$/.test(y)||!q||!Number.isFinite(q.allowance)||q.allowance<0||q.allowance>366||!Number.isFinite(q.carry)||q.carry<0||q.carry>366||!Array.isArray(q.free)||!q.free.every(d=>validDate(d)&&d.startsWith(y+'-'))||q.expiry&&(!validDate(q.expiry)||!q.expiry.startsWith(y+'-')))throw Error('Ungültiger Urlaubsanspruch')}return v}
 function quotaFor(year){return vacationData().quotas[year]||{allowance:30,carry:0,free:[]}}
 function vacationDays(record,year,free){const excluded=new Set([...free,...nrwHolidays(year).map(h=>h.date)]);const result=[];const start=record.start>year+'-01-01'?record.start:year+'-01-01',end=record.end<year+'-12-31'?record.end:year+'-12-31';if(start>end)return result;const d=new Date(start+'T12:00:00');while(dateKey(d)<=end){const key=dateKey(d);if(d.getDay()!==0&&d.getDay()!==6&&!excluded.has(key))result.push(key);d.setDate(d.getDate()+1)}return result}
 function vacationBalance(year,today=dateKey(new Date())){const q=quotaFor(year);let used=0,planned=0,carryLeft=q.carry;const days=vacationData().records.flatMap(r=>vacationDays(r,year,q.free).map(date=>({date,factor:Number(r.factor)}))).sort((a,b)=>a.date.localeCompare(b.date));for(const d of days){if(!q.expiry||d.date<=q.expiry){const take=Math.min(carryLeft,d.factor);carryLeft-=take}if(d.date<=today)used+=d.factor;else planned+=d.factor}const expired=q.expiry&&today>q.expiry?carryLeft:0;return {entitlement:q.allowance+q.carry,used,planned,expired,remaining:q.allowance+q.carry-used-planned-expired}}
@@ -125,4 +129,5 @@ function renderCalendarDetails(){const day=calendarSelected,entries=entriesOnDay
 function selectCalendarMonth(month){if(!/^\d{4}-\d{2}$/.test(month))return;$('#calMonth').value=month;const year=month.slice(0,4);if(![...$('#vacYear').options].some(o=>o.value===year))$('#vacYear').add(new Option(year,year));$('#vacYear').value=year;renderVacation()}
 function moveCalendarMonth(n){const value=$('#calMonth').value;if(!value)return;const [y,m]=value.split('-').map(Number);selectCalendarMonth(dateKey(new Date(y,m-1+n,1,12)).slice(0,7))}
 $('#calPrev').onclick=()=>moveCalendarMonth(-1);$('#calNext').onclick=()=>moveCalendarMonth(1);$('#calToday').onclick=()=>{calendarSelected=dateKey(new Date());selectCalendarMonth(calendarSelected.slice(0,7))};$('#calMonth').onchange=()=>selectCalendarMonth($('#calMonth').value);
+
 
