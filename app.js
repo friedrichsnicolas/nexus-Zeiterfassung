@@ -35,14 +35,27 @@ let clock=null;
 try{clock=JSON.parse(localStorage.getItem(CLOCK_KEY)||'null')}catch{}
 const clockCard=document.createElement('div');
 clockCard.className='card clockcard';
-clockCard.innerHTML='<div class="clockhead"><span class="live-dot"></span><span class="eyebrow">DEINE ZEIT LÄUFT HIER</span></div><h2>Stempeluhr</h2><p id="clockInfo"></p><div class="actions"><button type="button" class="primary" id="clockIn">Einstempeln</button><button type="button" id="clockOut">Ausstempeln</button><button type="button" id="clockFinish" hidden>Angaben ergänzen</button></div>';
+clockCard.innerHTML='<div class="clockhead"><span class="live-dot"></span><span class="eyebrow">DEINE ZEIT LÄUFT HIER</span></div><h2>Stempeluhr</h2><div id="clockDisplay" class="clockdisplay" hidden><p id="clockTimerLabel" class="timerlabel">LAUFENDE ZEIT</p><div id="clockTimer" class="clockdigits" role="timer" aria-live="off">00:00:00</div><div class="clockunits" aria-hidden="true"><span>Stunden</span><span>Minuten</span><span>Sekunden</span></div></div><p id="clockInfo"></p><div class="actions"><button type="button" class="primary" id="clockIn">Einstempeln</button><button type="button" id="clockOut">Ausstempeln</button><button type="button" id="clockFinish" hidden>Angaben ergänzen</button></div>';
 form.before(clockCard);
+function clockElapsed(at=Date.now()){
+ if(!clock)return 0;
+ const start=Number.isFinite(clock.startedAt)?clock.startedAt:+new Date(clock.start);
+ const end=clock.end?(Number.isFinite(clock.stoppedAt)?clock.stoppedAt:+new Date(clock.end)):at;
+ return Number.isFinite(start)&&Number.isFinite(end)?Math.max(0,Math.floor((end-start)/1000)):0;
+}
+function updateClockTimer(){
+ const seconds=clockElapsed(),parts=[Math.floor(seconds/3600),Math.floor(seconds/60)%60,seconds%60];
+ $('#clockTimer').textContent=parts.map(n=>String(n).padStart(2,'0')).join(':');
+}
 function clockView(){
+ $('#clockDisplay').hidden=!clock;
+ $('#clockTimerLabel').textContent=clock?.end?'ERFASSTE ZEIT':'LAUFENDE ZEIT';
+ updateClockTimer();
  clockCard.classList.toggle('running',!!clock&&!clock.end);
  $('#clockIn').disabled=!!clock;
  $('#clockOut').disabled=!clock||!!clock.end;
  $('#clockFinish').hidden=!clock||!clock.end;$('#clockFinish').classList.toggle('primary',!!clock?.end);
- $('#clockInfo').textContent=!clock?'Bereit. Angaben zu Projekt und Arbeitsort ergänzt du beim Ausstempeln.':clock.end?'Zeitraum beendet: '+stamp(clock.start)+' bis '+stamp(clock.end)+'. Projekt und Arbeitsort ergänzen und speichern – danach kannst du erneut einstempeln.':'Eingestempelt seit '+stamp(clock.start)+' · '+hours(Math.max(0,(Date.now()-new Date(clock.start))/60000));
+ $('#clockInfo').textContent=!clock?'Bereit. Angaben zu Projekt und Arbeitsort ergänzt du beim Ausstempeln.':clock.end?'Zeitraum beendet: '+stamp(clock.start)+' bis '+stamp(clock.end)+'. Projekt und Arbeitsort ergänzen und speichern – danach kannst du erneut einstempeln.':'Eingestempelt seit '+stamp(clock.start)+'. Deine Zeit wird automatisch festgehalten.';
 }
 function clockStore(next){return save(state,next,true);}
 
@@ -59,11 +72,13 @@ function finishClock(){
 }
 $('#clockIn').onclick=()=>{
  if(clock)return;
- if(clockStore({id:crypto.randomUUID(),start:local(new Date()),end:null}))tell('Eingestempelt. Du kannst die App schließen; die Startzeit bleibt gespeichert.');
+ const startedAt=Date.now();
+ if(clockStore({id:crypto.randomUUID(),start:local(new Date(startedAt)),startedAt,end:null}))tell('Eingestempelt. Du kannst die App schließen; die Startzeit bleibt gespeichert.');
 };
 $('#clockOut').onclick=()=>{
  if(!clock||clock.end)return;
- if(clockStore({...clock,end:local(new Date())})){finishClock();if(clock.end===clock.start)tell('Ausgestempelt. Die Erfassung erfolgt minutengenau. Bei weniger als einer Minute bitte das Ende vor dem Speichern anpassen.');}
+ const stoppedAt=Date.now();
+ if(clockStore({...clock,end:local(new Date(stoppedAt)),stoppedAt})){finishClock();if(clock.end===clock.start)tell('Ausgestempelt. Die Erfassung erfolgt minutengenau. Bei weniger als einer Minute bitte das Ende vor dem Speichern anpassen.');}
 };
 $('#clockFinish').onclick=finishClock;
 const originalSubmit=form.onsubmit;
@@ -73,7 +88,8 @@ form.onsubmit=e=>{
 };
 clockView();if(clock?.end)prefillStoppedClock();
 $('#reset').onclick=()=>{if(clock?.end)finishClock();else reset()};
-setInterval(clockView,30000);
+setInterval(()=>{if(!document.hidden&&clock&&!clock.end)updateClockTimer()},1000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)updateClockTimer()});
 window.addEventListener('storage',e=>{if(e.key===CLOCK_KEY){try{clock=JSON.parse(e.newValue||'null');clockView()}catch{}}});
 
 
@@ -129,5 +145,6 @@ function renderCalendarDetails(){const day=calendarSelected,entries=entriesOnDay
 function selectCalendarMonth(month){if(!/^\d{4}-\d{2}$/.test(month))return;$('#calMonth').value=month;const year=month.slice(0,4);if(![...$('#vacYear').options].some(o=>o.value===year))$('#vacYear').add(new Option(year,year));$('#vacYear').value=year;renderVacation()}
 function moveCalendarMonth(n){const value=$('#calMonth').value;if(!value)return;const [y,m]=value.split('-').map(Number);selectCalendarMonth(dateKey(new Date(y,m-1+n,1,12)).slice(0,7))}
 $('#calPrev').onclick=()=>moveCalendarMonth(-1);$('#calNext').onclick=()=>moveCalendarMonth(1);$('#calToday').onclick=()=>{calendarSelected=dateKey(new Date());selectCalendarMonth(calendarSelected.slice(0,7))};$('#calMonth').onchange=()=>selectCalendarMonth($('#calMonth').value);
+
 
 
