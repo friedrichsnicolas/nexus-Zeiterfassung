@@ -21,6 +21,9 @@ jobs:
       - name: Validate application
         run: |
           node --check app.js
+          node --check sync.js
+          node --check sync-core.js
+          node tests/sync.cjs
           node tests/calculations.cjs
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
@@ -32,3 +35,4 @@ jobs:
         uses: actions/deploy-pages@v4
         with:
           artifact_name: github-pages-${{ github.run_attempt }}
+

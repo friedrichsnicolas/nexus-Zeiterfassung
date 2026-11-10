@@ -32,3 +32,4 @@ assert.equal(vm.runInContext("entriesOnDay([{start:'2026-11-10T22:00',end:'2026-
 assert.equal(vm.runInContext("entriesOnDay([{start:'2026-11-10T22:00',end:'2026-11-11T01:00'}],'2026-11-11').length",ctx),1);
 assert.throws(()=>vm.runInContext("validateVacation({records:[],quotas:{'2026':{allowance:30,carry:5,expiry:'2027-03-31',free:[]}}})",ctx));
 console.log('7 carry expiry and calendar day checks passed.');
+

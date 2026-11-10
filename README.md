@@ -46,3 +46,12 @@ Eigene Seite mit Jahresanspruch, manuellem Übertrag, verbrauchten und geplanten
 Jahresanspruch, manuelle Übertragshöhe, optionales Verfallsdatum (im jeweiligen Jahr) und zusätzliche freie Tage werden unter Einstellungen je Kalenderjahr gepflegt. Ohne Verfallsdatum bleibt der Übertrag im Konto erhalten. Urlaub wird chronologisch zuerst auf noch gültigen Übertrag angerechnet; nach Ablauf wird der ungenutzte Anteil als verfallen ausgewiesen und vom frei verfügbaren Rest abgezogen. Dies bildet die selbst konfigurierte Regel ab, keine automatische arbeitsrechtliche Prüfung.
 
 Die Urlaubsseite zeigt eine Monatsansicht: Urlaub grün, NRW-Feiertage gelb und Projekt-/Ortsangaben blau. Ein Klick auf ein Datum öffnet alle Details und die Bearbeitung vorhandener Zeiteinträge. Wochenend- und Feiertage innerhalb eines Urlaubszeitraums sind als ohne Abzug gekennzeichnet. Über Mitternacht laufende Projekte erscheinen an den betroffenen Tagen, ein Ende genau um 00:00 nicht zusätzlich am Folgetag. Alle Einstellungen sind Teil der JSON-Sicherung.
+
+
+
+## Geräteübergreifende Synchronisierung (vorbereitet)
+Die Seite Konto & Sync enthält Anmeldung per E-Mail-Link, Datenübernahme und Konfliktauswahl. Die Cloud ist erst aktiv, wenn das persönliche Supabase-Projekt tatsächlich eingerichtet und in `sync-config.js` konfiguriert wurde. Ohne Konfiguration arbeitet die App ausschließlich lokal weiter.
+
+Siehe [backend/SETUP.md](backend/SETUP.md) und [backend/setup.sql](backend/setup.sql) für die konkrete Einrichtung und die erforderlichen Live-Prüfungen. Daten, Stempelstatus und Urlaubs-/Projekteinstellungen werden als private, versionsgeprüfte Dokumente je Benutzer gespeichert. Gleichzeitige Änderungen erfordern eine bewusste Auswahl; sie werden nicht automatisch zusammengeführt. Offline-Änderungen bleiben lokal vorgemerkt.
+
+Das Browser-SDK wird lokal ausgeliefert (Version 2.119.0, MIT, `SUPABASE-LICENSE`). `node tests/sync.cjs` prüft den clientseitigen Konflikt-/Wiederholungsablauf mit simuliertem Backend; dies ersetzt keinen Live-Test der Datenbank, RLS-Regeln und E-Mail-Anmeldung.
