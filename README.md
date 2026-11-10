@@ -40,3 +40,9 @@ Das Wochenziel ist ein persönlicher Vergleichswert. Urlaub und Feiertage werden
 
 ## Urlaubstracker
 Eigene Seite mit Jahresanspruch, manuellem Übertrag, verbrauchten und geplanten Tagen sowie frei verfügbarem Rest. Ganze Tage und einzelne halbe Tage; Wochenenden und gesetzliche NRW-Feiertage werden ausgeschlossen. Die elf regelmäßig geltenden gesetzlichen NRW-Feiertage werden automatisch für das jeweilige Jahr berechnet und von Urlaubstagen ausgenommen. Andere freie Tage können zusätzlich pro Jahr manuell hinterlegt werden. Vergangene Einträge einschließlich heute gelten als verbraucht, künftige Tage als reserviert. Es gibt keine Genehmigungsverwaltung. Jahresübergreifende Zeiträume werden für jedes Jahr separat gezählt. Urlaub, Ansprüche und freie Tage sind in den JSON-Sicherungen enthalten. Der Tracker verändert das persönliche Wochenziel nicht automatisch.
+
+
+## Urlaubseinstellungen und Monatskalender
+Jahresanspruch, manuelle Übertragshöhe, optionales Verfallsdatum (im jeweiligen Jahr) und zusätzliche freie Tage werden unter Einstellungen je Kalenderjahr gepflegt. Ohne Verfallsdatum bleibt der Übertrag im Konto erhalten. Urlaub wird chronologisch zuerst auf noch gültigen Übertrag angerechnet; nach Ablauf wird der ungenutzte Anteil als verfallen ausgewiesen und vom frei verfügbaren Rest abgezogen. Dies bildet die selbst konfigurierte Regel ab, keine automatische arbeitsrechtliche Prüfung.
+
+Die Urlaubsseite zeigt eine Monatsansicht: Urlaub grün, NRW-Feiertage gelb und Projekt-/Ortsangaben blau. Ein Klick auf ein Datum öffnet alle Details und die Bearbeitung vorhandener Zeiteinträge. Wochenend- und Feiertage innerhalb eines Urlaubszeitraums sind als ohne Abzug gekennzeichnet. Über Mitternacht laufende Projekte erscheinen an den betroffenen Tagen, ein Ende genau um 00:00 nicht zusätzlich am Folgetag. Alle Einstellungen sind Teil der JSON-Sicherung.
