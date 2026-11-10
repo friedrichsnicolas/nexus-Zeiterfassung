@@ -60,3 +60,13 @@ $;
 revoke all on function public.zeitwerk_write(bigint,jsonb,uuid) from public,anon;
 grant execute on function public.zeitwerk_write(bigint,jsonb,uuid) to authenticated;
 commit;
+
+-- Send row changes only to clients already authorized by the existing RLS policy.
+do $$ begin
+ if not exists(select 1 from pg_publication where pubname='supabase_realtime') then
+  create publication supabase_realtime;
+ end if;
+ if not exists(select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='zeitwerk_documents') then
+  alter publication supabase_realtime add table public.zeitwerk_documents;
+ end if;
+end $$;

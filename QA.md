@@ -32,3 +32,7 @@ Einstempeln, Erhalt beim Neuladen, Ausstempeln, automatische Vorbelegung eines o
 ## Grenzen der Prüfung
 
 Der tatsächliche Abgleich zweier unabhängiger Geräte mit derselben angemeldeten Person wurde in dieser Sitzung nicht vollständig durchgespielt. Das persönliche Cloud-Dokument wurde nur diagnostisch gelesen. Die Druckaktion wird automatisiert geprüft; das konkrete PDF-Ergebnis hängt vom lokalen Browser-Druckdialog ab. Der Export für Excel bleibt SpreadsheetML-XML, kein natives XLSX.
+
+## Ergänzung: gemeinsamer Timer
+
+Fünf zusätzliche geräteübergreifende Integrationsfälle bestanden: Start am Computer erscheint auf dem Handy trotz Eingabeentwurf; Ausstempeln am Handy erreicht den Computer über den Polling-Rückfall; Abschluss erzeugt genau einen Eintrag auf beiden Instanzen; gleichzeitige Projektänderung und Stopp bleiben beide erhalten; Abmeldung zeigt ausdrücklich lokale Erfassung an. Der Testtransport sortiert JSON-Objektschlüssel wie ein JSONB-Roundtrip. Die tatsächlich aktivierte Realtime-Publikation, weiterhin aktive RLS und fehlende anonyme Leseberechtigung wurden im Projekt geprüft. Die Tests verwenden getrennte App-Laufzeiten und einen Testtransport, keine persönlichen Login-Sitzungen.

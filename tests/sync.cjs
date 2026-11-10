@@ -1,5 +1,6 @@
 const assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs'),crypto=require('node:crypto');
 const core=require('../sync-core.js');
+assert.equal(core.same({a:1,b:{x:2,y:3}},{b:{y:3,x:2},a:1}),true);
 const blank=()=>({state:{projects:['neXus intern'],places:[],entries:[]},clock:null});
 assert.equal(core.chooseAction({},null,blank(),'u1'),'initialize');
 assert.equal(core.chooseAction({}, {version:2},blank(),'u1'),'pull');
@@ -46,4 +47,5 @@ function harness({meta={},remote=null,rpc}={}){
  assert.equal(pulling.ctx.clock.id,'during-read');assert.equal(pulling.api.getMeta().dirty,true);assert.equal(pulling.api.getMeta().version,1);
  console.log('Sync decision, key validation, initial save, conflict, idempotent retry and stale-tab checks passed.');
 })().catch(e=>{console.error(e);process.exitCode=1});
+
 

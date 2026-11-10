@@ -61,3 +61,11 @@ Das Browser-SDK wird lokal ausgeliefert (Version 2.119.0, MIT, `SUPABASE-LICENSE
 `npm ci --ignore-scripts` installiert ausschließlich Entwicklungsabhängigkeiten. `npm test` prüft Berechnungen, Sync-Rennen und die vollständigen Anwendungsabläufe in einem isolierten DOM. Die produktive App benötigt keine npm-Pakete im Browser. Der GitHub-Workflow prüft die App und veröffentlicht nur die benötigten statischen Dateien. Details und Prüfgrenzen: [QA.md](QA.md).
 
 Die Oberfläche verwendet ein eigenständiges Zeitwerk-Zeichen, Dunkelgrün, warme helle Flächen und Messingakzente. Der Cloud-Status ist dauerhaft im Kopf erreichbar. Bereits ausgestempelte Vorgänge werden zum Ergänzen der Randdaten automatisch wiederhergestellt. Während eines Cloud-Abgleichs und offener Konflikte bleibt lokales Erfassen möglich. Bei abweichenden Datenständen wird die Cloud erst nach bewusster Auswahl weitergeschrieben.
+
+## Gemeinsame Stempeluhr
+
+Auf jedem Gerät unter Konto & Sync mit derselben E-Mail-Adresse anmelden. Den E-Mail-Link im Browser öffnen, in dem die App verwendet wird. Die Stempeluhr zeigt eine fehlende Anmeldung ausdrücklich an; lokale Buchungen ohne Anmeldung werden nicht auf andere Geräte übertragen.
+
+Angemeldete Geräte empfangen Änderungen per Supabase Postgres Changes für die eigene Benutzerzeile. Ein Kontrollabgleich alle drei Sekunden bei sichtbarer App und ein sofortiger Abgleich nach Fokus/Netzrückkehr sichern die Wiederaufnahme. Offene Formulare blockieren reine Timer-Updates nicht. Ein gespeicherter gemeinsamer Ausgangsstand ermöglicht das sichere Zusammenführen voneinander unabhängiger Änderungen an Stempeluhr und Stammdaten; uneindeutige Änderungen bleiben eine bewusste Konfliktauswahl.
+
+`tests/devices.cjs` führt den vollständigen Ablauf Computer → Handy → Computer in zwei getrennten DOM-Laufzeiten mit eigenem localStorage, echter App-/Sync-Logik und einem gemeinsamen, versionsgeprüften Testtransport aus. Dazu gehören erhaltene Eingabeentwürfe, Rückfall auf Polling, Abschluss auf dem anderen Gerät und konkurrierende Änderungen. Es ist kein physischer Zwei-Geräte-Livetest.
