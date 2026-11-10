@@ -36,3 +36,7 @@ Der tatsächliche Abgleich zweier unabhängiger Geräte mit derselben angemeldet
 ## Ergänzung: gemeinsamer Timer
 
 Fünf zusätzliche geräteübergreifende Integrationsfälle bestanden: Start am Computer erscheint auf dem Handy trotz Eingabeentwurf; Ausstempeln am Handy erreicht den Computer über den Polling-Rückfall; Abschluss erzeugt genau einen Eintrag auf beiden Instanzen; gleichzeitige Projektänderung und Stopp bleiben beide erhalten; Abmeldung zeigt ausdrücklich lokale Erfassung an. Der Testtransport sortiert JSON-Objektschlüssel wie ein JSONB-Roundtrip. Die tatsächlich aktivierte Realtime-Publikation, weiterhin aktive RLS und fehlende anonyme Leseberechtigung wurden im Projekt geprüft. Die Tests verwenden getrennte App-Laufzeiten und einen Testtransport, keine persönlichen Login-Sitzungen.
+
+## Ergänzung: Kontoverwaltung
+
+Neun isolierte Auth-Prüfungen bestanden: ungültiges Passwort, E-Mail-Versandlimit mit Doppelklickschutz, Versandpause nach Neuladen, Passwort-Anmeldung trotz Versandpause, kurze/abweichende Passwortwiederholungen, Passwortänderung ohne Speicherung in App-Daten, Abmeldung anderer Sitzungen, Wiederherstellungsereignis und Wiederherstellungslink-Anfrage. Reale persönliche Passwörter wurden nicht durch die Automatisierung gesetzt oder ausgelesen. Der echte Versand wird bei erreichtem Anbieterlimit nicht getestet oder wiederholt angefragt.

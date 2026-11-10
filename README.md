@@ -69,3 +69,11 @@ Auf jedem Gerät unter Konto & Sync mit derselben E-Mail-Adresse anmelden. Den E
 Angemeldete Geräte empfangen Änderungen per Supabase Postgres Changes für die eigene Benutzerzeile. Ein Kontrollabgleich alle drei Sekunden bei sichtbarer App und ein sofortiger Abgleich nach Fokus/Netzrückkehr sichern die Wiederaufnahme. Offene Formulare blockieren reine Timer-Updates nicht. Ein gespeicherter gemeinsamer Ausgangsstand ermöglicht das sichere Zusammenführen voneinander unabhängiger Änderungen an Stempeluhr und Stammdaten; uneindeutige Änderungen bleiben eine bewusste Konfliktauswahl.
 
 `tests/devices.cjs` führt den vollständigen Ablauf Computer → Handy → Computer in zwei getrennten DOM-Laufzeiten mit eigenem localStorage, echter App-/Sync-Logik und einem gemeinsamen, versionsgeprüften Testtransport aus. Dazu gehören erhaltene Eingabeentwürfe, Rückfall auf Polling, Abschluss auf dem anderen Gerät und konkurrierende Änderungen. Es ist kein physischer Zwei-Geräte-Livetest.
+
+## Kontoverwaltung und Passwort-Anmeldung
+
+Unter Konto & Sync kann eine bereits angemeldete Person selbst ein Passwort festlegen oder ändern (mindestens zwölf Zeichen), ihre Kontoadresse und letzte Anmeldung sehen sowie andere Sitzungen abmelden. Auf weiteren Geräten ist anschließend die Anmeldung mit E-Mail und Passwort ohne neue Anmelde-E-Mail möglich. Passwörter werden ausschließlich über den Supabase-Auth-Client übertragen und nicht in Zeitwerk-Daten oder lokalem App-Speicher abgelegt.
+
+E-Mail-Links und Passwort-Wiederherstellung bleiben als Alternative verfügbar. Ein 60-Sekunden-Schutz verhindert doppelte Anfragen und bleibt beim Neuladen erhalten. Das echte Versandlimit des Anbieters wird dadurch nicht angehoben. Bei erreichtem Limit ein bereits angemeldetes Gerät zum Festlegen des Passworts nutzen; wenn keine Anmeldung mehr besteht, muss der Versand wieder verfügbar sein oder ein eigener SMTP-Dienst separat eingerichtet werden. Die Abmeldung anderer Sitzungen wird bei bereits ausgegebenen Zugriffstokens verzögert wirksam.
+
+`tests/account.cjs` prüft Passwort-Anmeldung trotz E-Mail-Sperre, Fehlerübersetzung, Versandpause, Passwortvalidierung und -änderung, fehlende Passwortablage, Wiederherstellungsereignis und Abmeldung anderer Sitzungen mit einem isolierten Auth-Testtransport. Es werden weder echte Passwörter gesetzt noch Test-E-Mails versendet.
