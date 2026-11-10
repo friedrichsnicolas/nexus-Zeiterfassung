@@ -28,3 +28,45 @@ $('#restore').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{cons
 $('#pdf').onclick=()=>window.print();
 $('#excel').onclick=()=>{const xml=s=>esc(s),headers=['Projekt','Zeitart','Start','Ende','Pause (Minuten)','Netto (Stunden)','Arbeitsort','Ort','Notiz'];const rows=[headers,...selected().map(e=>[e.project,e.kind,e.start.replace('T',' '),e.end.replace('T',' '),e.pause,minutes(e)/60,e.mode,e.place,e.note])];const content='<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Worksheet ss:Name="Zeiterfassung"><Table>'+rows.map(r=>'<Row>'+r.map(v=>'<Cell><Data ss:Type="'+(typeof v==='number'?'Number':'String')+'">'+xml(v)+'</Data></Cell>').join('')+'</Row>').join('')+'</Table></Worksheet></Workbook>';download(content,'zeitwerk-export.xml','application/xml');tell('Excel-Datei exportiert. Die XML-Datei lässt sich in Excel öffnen.');};
 options();reset();period();
+
+const CLOCK_KEY=KEY+'-clock';
+let clock=null;
+try{clock=JSON.parse(localStorage.getItem(CLOCK_KEY)||'null')}catch{}
+const clockCard=document.createElement('div');
+clockCard.className='card';
+clockCard.innerHTML='<h2>Stempeluhr</h2><p id="clockInfo"></p><div class="actions"><button type="button" class="primary" id="clockIn">Einstempeln</button><button type="button" id="clockOut">Ausstempeln</button><button type="button" id="clockFinish" hidden>Angaben ergänzen</button></div>';
+form.before(clockCard);
+function clockView(){
+ $('#clockIn').disabled=!!clock;
+ $('#clockOut').disabled=!clock||!!clock.end;
+ $('#clockFinish').hidden=!clock||!clock.end;
+ $('#clockInfo').textContent=!clock?'Bereit. Angaben zu Projekt und Arbeitsort ergänzt du beim Ausstempeln.':clock.end?'Ausgestempelt. Bitte Angaben ergänzen und den Eintrag speichern.':'Eingestempelt seit '+stamp(clock.start)+' · '+hours(Math.max(0,(Date.now()-new Date(clock.start))/60000));
+}
+function clockStore(next){
+ try{localStorage.setItem(CLOCK_KEY,JSON.stringify(next));clock=next;clockView();return true}catch{tell('Stempelzeit konnte nicht gespeichert werden.');return false}
+}
+function finishClock(){
+ if(!clock||!clock.end)return;
+ page('entry');form.reset();field('id').value=clock.id;
+ field('start').value=clock.start;field('end').value=clock.end;
+ field('project').selectedIndex=-1;
+ preview();form.scrollIntoView({behavior:'smooth',block:'start'});
+ tell('Bitte Projekt, Zeitart, Arbeitsort und Pause ergänzen und speichern.');
+}
+$('#clockIn').onclick=()=>{
+ if(clock)return;
+ if(clockStore({id:crypto.randomUUID(),start:local(new Date()),end:null}))tell('Eingestempelt. Du kannst die App schließen; die Startzeit bleibt gespeichert.');
+};
+$('#clockOut').onclick=()=>{
+ if(!clock||clock.end)return;
+ if(clockStore({...clock,end:local(new Date())}))finishClock();
+};
+$('#clockFinish').onclick=finishClock;
+const originalSubmit=form.onsubmit;
+form.onsubmit=e=>{
+ if(clock&&field('id').value===clock.id&&!clock.end){e.preventDefault();return tell('Bitte zuerst ausstempeln.')}
+ originalSubmit(e);
+};
+clockView();
+setInterval(clockView,30000);
+window.addEventListener('storage',e=>{if(e.key===CLOCK_KEY){try{clock=JSON.parse(e.newValue||'null');clockView()}catch{}}});
