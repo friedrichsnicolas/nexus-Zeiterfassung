@@ -1,3 +1,2 @@
-// Only public project URL + publishable/anon key. Never a service_role/secret key.
-// Filled after the dedicated backend project is connected and provisioned.
-window.ZEITWERK_CLOUD = {url:'',key:''};
+// Public Supabase client configuration. Never place secret/service-role keys here.
+window.ZEITWERK_CLOUD = {"url":"https://ghwscyrdbtaaffxjqyge.supabase.co","key":"sb_publishable_URr4dU9MTTcbFdWAagy1uw_iOfs9clb"};

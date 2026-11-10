@@ -15,7 +15,11 @@ drop policy if exists zeitwerk_read_own on public.zeitwerk_documents;
 create policy zeitwerk_read_own on public.zeitwerk_documents
  for select to authenticated using ((select auth.uid()) = user_id);
 
-create or replace function public.zeitwerk_write(p_expected bigint, p_body jsonb, p_operation uuid)
+create schema if not exists zeitwerk_private;
+revoke all on schema zeitwerk_private from public, anon;
+grant usage on schema zeitwerk_private to authenticated;
+
+create or replace function zeitwerk_private.write_document(p_expected bigint, p_body jsonb, p_operation uuid)
 returns jsonb language plpgsql security definer set search_path = '' as $$
 declare v_uid uuid := auth.uid(); v_doc public.zeitwerk_documents%rowtype;
 begin
@@ -46,6 +50,13 @@ begin
  end if;
  return jsonb_build_object('ok',true,'version',v_doc.version);
 end $$;
+revoke all on function zeitwerk_private.write_document(bigint,jsonb,uuid) from public,anon;
+grant execute on function zeitwerk_private.write_document(bigint,jsonb,uuid) to authenticated;
+
+create or replace function public.zeitwerk_write(p_expected bigint, p_body jsonb, p_operation uuid)
+returns jsonb language sql security invoker set search_path = '' as $
+ select zeitwerk_private.write_document(p_expected,p_body,p_operation);
+$;
 revoke all on function public.zeitwerk_write(bigint,jsonb,uuid) from public,anon;
 grant execute on function public.zeitwerk_write(bigint,jsonb,uuid) to authenticated;
 commit;
