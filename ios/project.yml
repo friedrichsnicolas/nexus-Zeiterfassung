@@ -31,5 +31,5 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: de.zeitwerk.native.widget
         GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_NSExtension_NSExtensionPointIdentifier: com.apple.widgetkit-extension
+        INFOPLIST_FILE: WidgetInfo.plist
         CODE_SIGN_ENTITLEMENTS: Entitlements/ZeitwerkWidget.entitlements
