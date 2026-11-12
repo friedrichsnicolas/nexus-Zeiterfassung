@@ -54,9 +54,9 @@ revoke all on function zeitwerk_private.write_document(bigint,jsonb,uuid) from p
 grant execute on function zeitwerk_private.write_document(bigint,jsonb,uuid) to authenticated;
 
 create or replace function public.zeitwerk_write(p_expected bigint, p_body jsonb, p_operation uuid)
-returns jsonb language sql security invoker set search_path = '' as $
+returns jsonb language sql security invoker set search_path = '' as $$
  select zeitwerk_private.write_document(p_expected,p_body,p_operation);
-$;
+$$;
 revoke all on function public.zeitwerk_write(bigint,jsonb,uuid) from public,anon;
 grant execute on function public.zeitwerk_write(bigint,jsonb,uuid) to authenticated;
 commit;
