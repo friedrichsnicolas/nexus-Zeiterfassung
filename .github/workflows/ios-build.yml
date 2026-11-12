@@ -1,0 +1,37 @@
+name: iOS widget build (macOS)
+on:
+  pull_request:
+    paths:
+      - 'ios/**'
+      - '.github/workflows/ios-build.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode with iOS 26 SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Installed Xcode versions:"
+          ls -1 /Applications | grep '^Xcode' || true
+          CANDIDATE=$(find /Applications -maxdepth 1 -type d -name 'Xcode*.app' | sort -V | tail -1)
+          test -n "$CANDIDATE"
+          sudo xcode-select -s "$CANDIDATE/Contents/Developer"
+          xcodebuild -version
+          xcodebuild -showsdks
+          xcodebuild -showsdks | grep -q 'iphoneos26' || { echo 'iOS 26 SDK unavailable on runner'; exit 1; }
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate Xcode project
+        working-directory: ios
+        run: xcodegen generate
+      - name: Build iOS app and widget (no signing)
+        working-directory: ios
+        run: |
+          set -euo pipefail
+          xcodebuild -project ZeitwerkNative.xcodeproj -scheme ZeitwerkNative -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
