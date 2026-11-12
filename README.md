@@ -77,3 +77,7 @@ Unter Konto & Sync kann eine bereits angemeldete Person selbst ein Passwort fest
 E-Mail-Links und Passwort-Wiederherstellung bleiben als Alternative verfügbar. Ein 60-Sekunden-Schutz verhindert doppelte Anfragen und bleibt beim Neuladen erhalten. Das echte Versandlimit des Anbieters wird dadurch nicht angehoben. Bei erreichtem Limit ein bereits angemeldetes Gerät zum Festlegen des Passworts nutzen; wenn keine Anmeldung mehr besteht, muss der Versand wieder verfügbar sein oder ein eigener SMTP-Dienst separat eingerichtet werden. Die Abmeldung anderer Sitzungen wird bei bereits ausgegebenen Zugriffstokens verzögert wirksam.
 
 `tests/account.cjs` prüft Passwort-Anmeldung trotz E-Mail-Sperre, Fehlerübersetzung, Versandpause, Passwortvalidierung und -änderung, fehlende Passwortablage, Wiederherstellungsereignis und Abmeldung anderer Sitzungen mit einem isolierten Auth-Testtransport. Es werden weder echte Passwörter gesetzt noch Test-E-Mails versendet.
+
+## Siri und CarPlay
+
+Unter Konto & Sync → Siri & CarPlay lässt sich ein persönlicher Kurzbefehl-Schlüssel erstellen. Damit startet und stoppt ein iOS-Kurzbefehl die gemeinsame Stempeluhr per Siri, auch im Auto über CarPlay, ohne die App zu öffnen. Projekt und Arbeitsort werden wie beim normalen Ausstempeln danach in der App ergänzt. Eine eigene CarPlay-App ist nicht nötig. Einrichtung der Datenbankfunktionen: [backend/SETUP.md](backend/SETUP.md#siri-und-carplay-stempeluhr-per-kurzbefehl).

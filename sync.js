@@ -3,7 +3,7 @@
 const core=window.ZeitwerkSyncCore, META=KEY+'-sync-meta', CONFIG=KEY+'-sync-config';
 let meta={userId:null,version:0,dirty:false,generation:0,operation:null,conflict:false};
 try{meta={...meta,...JSON.parse(localStorage.getItem(META)||'{}')}}catch{}
-let client=null,user=null,busy=false,editing=false,conflict=null,paused=false,timer=null,realtime=null,realtimeUser=null,pendingCycle=false,authBusy=false;
+let client=null,user=null,busy=false,editing=false,conflict=null,paused=false,timer=null,realtime=null,realtimeUser=null,pendingCycle=false,authBusy=false,shortcutFor=null,shortcutBusy=false;
 let rawState=localStorage.getItem(KEY),rawClock=localStorage.getItem(CLOCK_KEY);
 let config=window.ZEITWERK_CLOUD||{url:'',key:''};
 try{const c=JSON.parse(localStorage.getItem(CONFIG)||'null');if(c)config=c}catch{}
@@ -14,7 +14,7 @@ function status(message){
  if($('#clockSyncText')){
  $('#clockSyncText').textContent=!user?'Nur auf diesem Gerät. Für den gemeinsamen Timer bitte anmelden.':conflict?'Datenstände prüfen, damit der Timer auf allen Geräten übereinstimmt.':!navigator.onLine?'Offline gespeichert. Der gemeinsame Timer wird nach der Verbindung abgeglichen.':problem?'Cloud-Abgleich ausstehend. '+message:'Gemeinsamer Timer · '+user.email+(meta.dirty?' · Änderung wird übertragen.':'');
  $('#clockSyncAction').textContent=!user?'Anmelden':conflict||problem?'Sync prüfen':'Konto';}
- $('#syncUser').textContent=user?'Angemeldet: '+user.email:'';$('#syncNow').disabled=!user||busy;$('#syncLogout').disabled=!user||busy;$('#syncLoginForm').hidden=!!user;$('#syncLoginArea').hidden=!!user;$('#accountManage').hidden=!user;$('#accountEmail').textContent=user?.email||'';$('#accountLastLogin').textContent=user?.last_sign_in_at?new Date(user.last_sign_in_at).toLocaleString('de-DE'):'Aktive Anmeldung';updateAuthControls();
+ $('#syncUser').textContent=user?'Angemeldet: '+user.email:'';$('#syncNow').disabled=!user||busy;$('#syncLogout').disabled=!user||busy;$('#syncLoginForm').hidden=!!user;$('#syncLoginArea').hidden=!!user;$('#accountManage').hidden=!user;shortcutRefresh();$('#accountEmail').textContent=user?.email||'';$('#accountLastLogin').textContent=user?.last_sign_in_at?new Date(user.last_sign_in_at).toLocaleString('de-DE'):'Aktive Anmeldung';updateAuthControls();
 }
 function persist(){try{localStorage.setItem(META,JSON.stringify(meta));return true}catch{paused=true;status('Synchronisierung pausiert: Gerätespeicher voll. Bitte Datensicherung erstellen.');return false}}
 function snapshot(){return {state:structuredClone(state),clock:clock?structuredClone(clock):null}}
@@ -89,6 +89,29 @@ $('#passwordLoginForm').onsubmit=async e=>{e.preventDefault();if(!client||authBu
 $('#accountPasswordForm').onsubmit=async e=>{e.preventDefault();if(!user||!client||authBusy)return;const password=$('#accountPassword').value,confirmation=$('#accountPasswordConfirm').value;$('#passwordResult').textContent='';if(password.length<12)return $('#passwordResult').textContent='Bitte mindestens 12 Zeichen verwenden.';if(password!==confirmation)return $('#passwordResult').textContent='Die beiden Passwörter stimmen nicht überein.';authBusy=true;updateAuthControls();try{const {error}=await client.auth.updateUser({password});if(error)throw error;$('#passwordResult').textContent='Passwort gespeichert. Auf weiteren Geräten kannst du dich jetzt mit deiner E-Mail-Adresse und diesem Passwort anmelden.';}catch(error){$('#passwordResult').textContent=authError(error);}finally{$('#accountPassword').value='';$('#accountPasswordConfirm').value='';authBusy=false;updateAuthControls();}};
 $('#accountSignOutOthers').onclick=async()=>{if(!user||!client||authBusy)return;if(!confirm('Andere Geräte abmelden? Bitte dort noch nicht synchronisierte Änderungen zuerst sichern. Dieses Gerät bleibt angemeldet.'))return;authBusy=true;updateAuthControls();try{const {error}=await client.auth.signOut({scope:'others'});if(error)throw error;$('#sessionResult').textContent='Andere Sitzungen wurden abgemeldet. Auf anderen Geräten kann die Abmeldung verzögert wirksam werden.';}catch(error){$('#sessionResult').textContent=authError(error);}finally{authBusy=false;updateAuthControls();}};
 setInterval(()=>{if(emailBlockedUntil>Date.now()-2000)updateAuthControls()},1000);
+const SHORTCUT_MISSING='Die Datenbank-Erweiterung für Kurzbefehle ist noch nicht eingerichtet. Siehe backend/SETUP.md, Abschnitt Siri und CarPlay.';
+function shortcutMissing(error){return error?.code==='PGRST202'||error?.code==='42883'||/Could not find the function/i.test(error?.message||'')}
+function shortcutHide(){$('#shortcutSetup').hidden=true;$('#shortcutKey').value=''}
+function shortcutShow(info){$('#shortcutRevoke').hidden=!info?.vorhanden;$('#shortcutCreate').textContent=info?.vorhanden?'Neuen Schlüssel erstellen':'Schlüssel erstellen';$('#shortcutCreate').disabled=shortcutBusy;$('#shortcutRevoke').disabled=shortcutBusy;
+ $('#shortcutState').textContent=!info?'':info.vorhanden?'Schlüssel aktiv seit '+new Date(info.erstellt).toLocaleString('de-DE')+(info.zuletzt_genutzt?' · zuletzt genutzt '+new Date(info.zuletzt_genutzt).toLocaleString('de-DE'):' · noch nicht genutzt')+'.':'Noch kein Schlüssel erstellt.'}
+async function shortcutRefresh(force=false){if(!user||!client){shortcutFor=null;shortcutHide();return}if($('#account').hidden||!force&&shortcutFor===user.id)return;shortcutFor=user.id;
+ try{const {data,error}=await client.rpc('zeitwerk_kurzbefehl_info');if(error)throw error;shortcutShow(data)}catch(error){$('#shortcutState').textContent=shortcutMissing(error)?SHORTCUT_MISSING:'Status nicht abrufbar: '+(error?.message||'unbekannter Fehler');shortcutFor=null}}
+$('#shortcutCreate').onclick=async()=>{if(!user||!client||shortcutBusy)return;if(!$('#shortcutRevoke').hidden&&!confirm('Neuen Schlüssel erstellen? Bestehende Kurzbefehle funktionieren danach erst wieder mit dem neuen Schlüssel.'))return;
+ shortcutBusy=true;$('#shortcutResult').textContent='';shortcutShow(null);
+ try{const {data,error}=await client.rpc('zeitwerk_kurzbefehl_schluessel',{p_time_zone:Intl.DateTimeFormat().resolvedOptions().timeZone||'Europe/Berlin'});if(error)throw error;if(typeof data!=='string'||!/^zw_[0-9a-f]{64}$/.test(data))throw Error('Unerwartete Antwort.');
+  $('#shortcutUrl').value=config.url.replace(/\/$/,'')+'/rest/v1/rpc/zeitwerk_stempel';$('#shortcutApiKey').value=config.key;$('#shortcutKey').value=data;$('#shortcutSetup').hidden=false;
+  $('#shortcutResult').textContent='Schlüssel erstellt. Richte jetzt die Kurzbefehle wie unten beschrieben ein.'}
+ catch(error){$('#shortcutResult').textContent=shortcutMissing(error)?SHORTCUT_MISSING:'Schlüssel konnte nicht erstellt werden: '+(error?.message||'unbekannter Fehler')}
+ finally{shortcutBusy=false;await shortcutRefresh(true)}};
+$('#shortcutRevoke').onclick=async()=>{if(!user||!client||shortcutBusy)return;if(!confirm('Schlüssel löschen? Deine Kurzbefehle funktionieren danach nicht mehr.'))return;
+ shortcutBusy=true;$('#shortcutResult').textContent='';
+ try{const {error}=await client.rpc('zeitwerk_kurzbefehl_widerrufen');if(error)throw error;shortcutHide();$('#shortcutResult').textContent='Schlüssel gelöscht. Die Kurzbefehle sind jetzt gesperrt.'}
+ catch(error){$('#shortcutResult').textContent='Löschen nicht möglich: '+(error?.message||'unbekannter Fehler')}
+ finally{shortcutBusy=false;await shortcutRefresh(true)}};
+// Erst beim Öffnen von Konto & Sync abfragen, nicht bei jedem Seitenaufruf.
+if(typeof MutationObserver!=='undefined')new MutationObserver(()=>shortcutRefresh().catch(()=>{})).observe($('#account'),{attributes:true,attributeFilter:['hidden']});
+document.querySelectorAll('[data-copy]').forEach(b=>b.onclick=async()=>{const input=$('#'+b.dataset.copy);try{await navigator.clipboard.writeText(input.value);tell('Kopiert.')}catch{input.select();tell('Bitte markierten Text kopieren.')}});
+
 
 $('#syncLogout').onclick=async()=>{if(!client||busy)return;if(meta.dirty&&!confirm('Es gibt noch nicht synchronisierte Änderungen. Abmelden und lokal behalten?'))return;const {error}=await client.auth.signOut({scope:'local'});if(error)status('Abmelden nicht möglich: '+error.message);else{user=null;bindRealtime();conflict=null;$('#syncConflict').hidden=true;status('Abgemeldet · Daten bleiben auf diesem Gerät.');}};
 $('#syncConfigForm').onsubmit=e=>{e.preventDefault();if(user||meta.dirty&&meta.userId)return tell('Vor einem Verbindungswechsel bitte synchronisieren und abmelden.');const c={url:$('#syncUrl').value.trim().replace(/\/$/,''),key:$('#syncPublicKey').value.trim()};if(!core.safeConfig(c))return tell('Bitte gültige Supabase-URL und öffentlichen Publishable-/anon-Schlüssel eingeben.');try{localStorage.setItem(CONFIG,JSON.stringify(c));location.reload()}catch{tell('Verbindung konnte nicht gespeichert werden.')}};

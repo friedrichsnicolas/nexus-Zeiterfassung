@@ -23,3 +23,14 @@ Die App enthält die Anbindung; eine leere `sync-config.js` aktiviert keine Clou
 ## Bibliothek
 
 `supabase-sdk.js`: offizielles UMD-Bundle `@supabase/supabase-js` 2.119.0, heruntergeladen von jsDelivr am 10.11.2026. MIT-Lizenz siehe `SUPABASE-LICENSE`. Die App lädt die lokale Kopie nur bei konfigurierter Cloud.
+
+## Siri und CarPlay (Stempeluhr per Kurzbefehl)
+
+Optional. Damit lässt sich die Stempeluhr per iOS-Kurzbefehl und Siri starten und stoppen, auch über CarPlay und bei gesperrtem iPhone.
+
+1. `backend/siri-kurzbefehl.sql` einmalig im SQL Editor ausführen (nach `setup.sql`). Das Skript ist rein additiv und wiederholbar.
+2. In Zeitwerk unter Konto & Sync → Siri & CarPlay einen Schlüssel erstellen und die angezeigten Schritte in der App Kurzbefehle durchführen.
+
+Sicherheit: In der Datenbank liegt nur der SHA-256-Wert des Schlüssels. `public.zeitwerk_stempel` ist mit dem öffentlichen App-Schlüssel (Rolle `anon`) aufrufbar, wirkt aber nur mit gültigem persönlichem Schlüssel und ändert ausschließlich `body.clock` des eigenen Dokuments. Jeder Aufruf erhöht die Version wie ein normaler Schreibvorgang, sodass geöffnete Geräte den neuen Stand per Realtime übernehmen und veraltete Stände einen Konflikt statt eines stillen Überschreibens erhalten. Zeiteinträge werden weder gelesen noch zurückgegeben. Ein neuer Schlüssel ersetzt den alten; Löschen sperrt alle Kurzbefehle.
+
+Prüfung: `PGHOST=… PGUSER=… tests/stempel-sql.sh` führt die Funktionen gegen eine lokale PostgreSQL-Datenbank mit nachgebildeten Supabase-Rollen aus.
